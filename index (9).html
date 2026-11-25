@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StroyMarket Premium - Barcha Qurilish va Ta'mirlash Mahsulotlari</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React va ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel JS -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap');
+        
+        * { font-family: 'Plus Jakarta Sans', sans-serif; }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-6px); }
+            100% { transform: translateY(0px); }
+        }
+
+        .animate-float { animation: float 4s ease-in-out infinite; }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+
+        .gradient-dark {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+        }
+
+        .gradient-gold {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        /* PRINTER STILI (KASSA CHEKI & HISOBOT) */
+        @media print {
+            body * { visibility: hidden; }
+            #printable-area, #printable-area * { visibility: visible; }
+            #printable-area { position: absolute; left: 0; top: 0; width: 100%; padding: 0; margin: 0; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans antialiased selection:bg-amber-500 selection:text-white">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const CATEGORIES = [
+            { name: "Barchasi", icon: "🏢" },
+            { name: "G'isht & Sement", icon: "🧱" },
+            { name: "Kafel & Plitka", icon: "🔲" },
+            { name: "Bo'yoq & Kimyo", icon: "🎨" },
+            { name: "Pol qoplamalari", icon: "🪵" },
+            { name: "Elektr & Yoritish", icon: "💡" },
+            { name: "Santexnika", icon: "🚰" },
+            { name: "Tom & Izolyatsiya", icon: "🏠" },
+            { name: "Quruq qorishmalar", icon: "🧪" },
+            { name: "Qurilish asboblari", icon: "🛠️" }
+        ];
+
+        const INITIAL_PRODUCTS = [
+            {
+                id: 1,
+                name: "M-500 Markali Sement (50kg)",
+                category: "G'isht & Sement",
+                price: 68000,
+                unit: "qop",
+                coveragePerUnit: 1,
+                image: "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&q=80&w=600",
+                description: "Yuqori mustahkamlikdagi sement, poydevor va monolit ishlar uchun mos.",
+                stock: 450,
+                isPopular: true
+            },
+            {
+                id: 2,
+                name: "Granit Plitka 60x60 (Marmar nusxa)",
+                category: "Kafel & Plitka",
+                price: 145000,
+                unit: "kv.m",
+                coveragePerUnit: 1,
+                image: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=600",
+                description: "Ichki va tashqi xonalar uchun keramo-granit plitkasi. Zarbaga va tirnalishga chidamli.",
+                stock: 320,
+                isPopular: true
+            },
+            {
+                id: 3,
+                name: "Lateksli Devor Bo'yog'i (15 L)",
+                category: "Bo'yoq & Kimyo",
+                price: 450000,
+                unit: "vd",
+                coveragePerUnit: 60,
+                image: "https://images.unsplash.com/photo-1562259949-e8e7689d7828?auto=format&fit=crop&q=80&w=600",
+                description: "Suv bilan yuviladigan, hid tarqatmaydigan premium fasad va xona bo'yog'i.",
+                stock: 85,
+                isPopular: false
+            },
+            {
+                id: 4,
+                name: "Laminat Krono 33-Klass 8mm",
+                category: "Pol qoplamalari",
+                price: 110000,
+                unit: "kv.m",
+                coveragePerUnit: 1,
+                image: "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&q=80&w=600",
+                description: "Suvga chidamli va qirilmaydigan nemis standarti bo'yicha ishlangan oliy navli pol.",
+                stock: 750,
+                isPopular: true
+            },
+            {
+                id: 5,
+                name: "LED Lyustra Yoritgich 60W Smart",
+                category: "Elektr & Yoritish",
+                price: 240000,
+                unit: "dona",
+                coveragePerUnit: 1,
+                image: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?auto=format&fit=crop&q=80&w=600",
+                description: "Pult va telefon orqali boshqariladigan, 3 xil yoritish rejimiga ega zamonaviy qandil.",
+                stock: 40,
+                isPopular: false
+            },
+            {
+                id: 6,
+                name: "Professional Dush Smesiteli (Qora Mat)",
+                category: "Santexnika",
+                price: 380000,
+                unit: "dona",
+                coveragePerUnit: 1,
+                image: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=600",
+                description: "Latun korpusli, zanglamaydigan va uzoq muddat xizmat qiluvchi krant to'plami.",
+                stock: 25,
+                isPopular: false
+            },
+            {
+                id: 7,
+                name: "Pishgan Qizil G'isht (Oliy Nav)",
+                category: "G'isht & Sement",
+                price: 1800,
+                unit: "dona",
+                coveragePerUnit: 0.02,
+                image: "https://images.unsplash.com/photo-1590069261209-f8e9b8642343?auto=format&fit=crop&q=80&w=600",
+                description: "Devor va bino poydevori uchun yuqori bosimga chidamli pishgan g'isht.",
+                stock: 15000,
+                isPopular: true
+            },
+            {
+                id: 8,
+                name: "Bosch Perforator Drel To'plami",
+                category: "Qurilish asboblari",
+                price: 850000,
+                unit: "to'plam",
+                coveragePerUnit: 1,
+                image: "https://images.unsplash.com/photo-1504148455328-c376907d081c?auto=format&fit=crop&q=80&w=600",
+                description: "Beton va g'ishtlarni teshish va o'yish uchun kuchli professional perforator.",
+                stock: 18,
+                isPopular: true
+            }
+        ];
+
+        function App() {
+            const [products, setProducts] = useState(() => {
+                const saved = localStorage.getItem('sm_v4_products');
+                return saved ? JSON.parse(saved) : INITIAL_PRODUCTS;
+            });
+
+            const [cart, setCart] = useState([]);
+            const [sales, setSales] = useState(() => {
+                const saved = localStorage.getItem('sm_v4_sales');
+                return saved ? JSON.parse(saved) : [];
+            });
+
+            const [view, setView] = useState('shop'); 
+            const [selectedCategory, setSelectedCategory] = useState("Barchasi");
+            const [searchTerm, setSearchTerm] = useState("");
+
+            // Admin Auth
+            const [adminPin, setAdminPin] = useState('');
+            const [isAdminAuth, setIsAdminAuth] = useState(false);
+            const [pinError, setPinError] = useState(false);
+
+            // Modals
+            const [selectedProduct, setSelectedProduct] = useState(null);
+            const [calcProduct, setCalcProduct] = useState(null);
+            const [editingProduct, setEditingProduct] = useState(null);
+
+            // Print
+            const [printOrder, setPrintOrder] = useState(null);
+
+            // Calculator state
+            const [dimensions, setDimensions] = useState({ length: '', width: '', height: '2.8' });
+            const [calcResult, setCalcResult] = useState(null);
+
+            // Delivery Form
+            const [orderInfo, setOrderInfo] = useState({
+                name: '',
+                phone: '',
+                city: 'Toshkent shahri',
+                address: '',
+                deliveryType: 'standard'
+            });
+
+            useEffect(() => {
+                localStorage.setItem('sm_v4_products', JSON.stringify(products));
+            }, [products]);
+
+            useEffect(() => {
+                localStorage.setItem('sm_v4_sales', JSON.stringify(sales));
+            }, [sales]);
+
+            // Filter products
+            const filteredProducts = products.filter(p => {
+                const matchesCategory = selectedCategory === "Barchasi" || p.category === selectedCategory;
+                const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.description.toLowerCase().includes(searchTerm.toLowerCase());
+                return matchesCategory && matchesSearch;
+            });
+
+            // Cart Logic
+            const addToCart = (product, qty = 1) => {
+                const exist = cart.find(x => x.id === product.id);
+                if (exist) {
+                    setCart(cart.map(x => x.id === product.id ? { ...exist, qty: exist.qty + qty } : x));
+                } else {
+                    setCart([...cart, { ...product, qty }]);
+                }
+            };
+
+            const removeFromCart = (id) => {
+                setCart(cart.filter(x => x.id !== id));
+            };
+
+            // Calculator
+            const handleCalculate = (e) => {
+                e.preventDefault();
+                const l = parseFloat(dimensions.length) || 0;
+                const w = parseFloat(dimensions.width) || 0;
+                const h = parseFloat(dimensions.height) || 0;
+                if (l <= 0 || w <= 0) return;
+
+                let totalArea = (calcProduct.category === "Bo'yoq & Kimyo" || calcProduct.category === "Quruq qorishmalar") ? 2 * (l + w) * h : l * w;
+                const areaWithMargin = totalArea * 1.1; 
+                const neededUnits = Math.ceil(areaWithMargin / calcProduct.coveragePerUnit);
+                const price = neededUnits * calcProduct.price;
+
+                setCalcResult({ area: totalArea.toFixed(1), neededUnits, price });
+            };
+
+            // Checkout
+            const handleCheckout = (e) => {
+                e.preventDefault();
+                if (cart.length === 0) return;
+
+                const deliveryFee = orderInfo.deliveryType === 'express' ? 80000 : 40000;
+                const itemsSubtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+                const grandTotal = itemsSubtotal + deliveryFee;
+
+                const newSale = {
+                    id: 'ORD-' + Math.floor(100000 + Math.random() * 900000),
+                    date: new Date().toLocaleDateString('uz-UZ'),
+                    time: new Date().toLocaleTimeString('uz-UZ'),
+                    customer: orderInfo.name,
+                    phone: orderInfo.phone,
+                    address: `${orderInfo.city}, ${orderInfo.address}`,
+                    deliveryType: orderInfo.deliveryType === 'express' ? 'Tezkor Express' : 'Standart',
+                    deliveryFee,
+                    items: cart,
+                    total: grandTotal
+                };
+
+                const updatedProducts = products.map(p => {
+                    const c = cart.find(ci => ci.id === p.id);
+                    if (c) return { ...p, stock: Math.max(0, p.stock - c.qty) };
+                    return p;
+                });
+
+                setProducts(updatedProducts);
+                setSales([newSale, ...sales]);
+                setCart([]);
+                alert(`Rahmat! Buyurtmangiz qabul qilindi. Buyurtma ID: ${newSale.id}`);
+                setView('shop');
+            };
+
+            // Admin Login
+            const handleAdminLogin = (e) => {
+                e.preventDefault();
+                if (adminPin === "1234") {
+                    setIsAdminAuth(true);
+                    setPinError(false);
+                } else {
+                    setPinError(true);
+                }
+            };
+
+            // Save new product
+            const handleAddProduct = (e) => {
+                e.preventDefault();
+                const f = e.target;
+                const newP = {
+                    id: Date.now(),
+                    name: f.name.value,
+                    category: f.category.value,
+                    price: Number(f.price.value),
+                    unit: f.unit.value,
+                    coveragePerUnit: Number(f.coverage.value) || 1,
+                    image: f.image.value || "https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&q=80&w=600",
+                    description: f.description.value,
+                    stock: Number(f.stock.value),
+                    isPopular: false
+                };
+                setProducts([newP, ...products]);
+                f.reset();
+                alert("Yangi mahsulot omborga qo'shildi!");
+            };
+
+            // Update Product
+            const handleUpdateProduct = (e) => {
+                e.preventDefault();
+                setProducts(products.map(p => p.id === editingProduct.id ? editingProduct : p));
+                setEditingProduct(null);
+                alert("Mahsulot ma'lumotlari yangilandi!");
+            };
+
+            // Delete Product
+            const handleDeleteProduct = (id) => {
+                if (confirm("Mahsulotni bazadan o'chirmoqchimisiz?")) {
+                    setProducts(products.filter(p => p.id !== id));
+                }
+            };
+
+            const triggerPrint = () => {
+                window.print();
+            };
+
+            const subtotal = cart.reduce((a, b) => a + (b.price * b.qty), 0);
+            const todayStr = new Date().toLocaleDateString('uz-UZ');
+            const todaySales = sales.filter(s => s.date === todayStr);
+            const todayRevenue = todaySales.reduce((sum, s) => sum + s.total, 0);
+
+            return (
+                <div className="min-h-screen flex flex-col">
+                    {/* PRINTER PRINT SHABLONI */}
+                    <div id="printable-area" className="hidden print:block font-mono text-black">
+                        {printOrder ? (
+                            <div className="max-w-xs mx-auto p-4 border-2 border-black space-y-3 text-xs">
+                                <div className="text-center border-b border-black pb-2">
+                                    <h2 className="text-base font-black">STROYMARKET</h2>
+                                    <p className="text-[10px]">Qurilish va ta'mirlash markazi</p>
+                                    <p className="text-[10px]">Tel: +998 90 123 45 67</p>
+                                </div>
+                                <div>
+                                    <p><strong>CHEK:</strong> {printOrder.id}</p>
+                                    <p><strong>SANA:</strong> {printOrder.date} {printOrder.time}</p>
+                                    <p><strong>MIJOZ:</strong> {printOrder.customer}</p>
+                                    <p><strong>TEL:</strong> {printOrder.phone}</p>
+                                </div>
+                                <div className="border-t border-b border-black py-2 my-2">
+                                    {printOrder.items.map(item => (
+                                        <div key={item.id} className="flex justify-between my-1">
+                                            <span>{item.name} x{item.qty}</span>
+                                            <span>{(item.price * item.qty).toLocaleString()}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="space-y-1">
+                                    <div className="flex justify-between"><span>Dostavka:</span><span>{printOrder.deliveryFee.toLocaleString()} so'm</span></div>
+                                    <div className="flex justify-between font-bold text-sm pt-1 border-t border-black"><span>JAMI:</span><span>{printOrder.total.toLocaleString()} so'm</span></div>
+                                </div>
+                                <p className="text-center text-[10px] pt-2">*** XARIDINGIZ UCHUN RAHMAT! ***</p>
+                            </div>
+                        ) : (
+                            <div className="p-6 space-y-4">
+                                <div className="text-center border-b border-black pb-3">
+                                    <h2 className="text-2xl font-black">STROYMARKET - KUNLIK TUSHUM HISOBOTI</h2>
+                                    <p className="text-sm">Sana: {todayStr}</p>
+                                </div>
+                                <div className="text-sm space-y-1">
+                                    <p><strong>Jami Buyurtmalar:</strong> {todaySales.length} ta</p>
+                                    <p><strong>Jami Tushum:</strong> {todayRevenue.toLocaleString()} so'm</p>
+                                </div>
+                                <table className="w-full text-xs border-collapse border border-black my-4 text-left">
+                                    <thead>
+                                        <tr className="bg-gray-200 border-b border-black">
+                                            <th className="p-2 border-r border-black">ID</th>
+                                            <th className="p-2 border-r border-black">Vaqt</th>
+                                            <th className="p-2 border-r border-black">Mijoz</th>
+                                            <th className="p-2 border-r border-black">Mahsulotlar</th>
+                                            <th className="p-2">Summa</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {todaySales.map(s => (
+                                            <tr key={s.id} className="border-b border-black">
+                                                <td className="p-2 border-r border-black font-bold">{s.id}</td>
+                                                <td className="p-2 border-r border-black">{s.time}</td>
+                                                <td className="p-2 border-r border-black">{s.customer}</td>
+                                                <td className="p-2 border-r border-black">{s.items.map(i => `${i.name} (${i.qty}x)`).join(', ')}</td>
+                                                <td className="p-2 font-bold">{s.total.toLocaleString()} so'm</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* MAIN INTERFACE */}
+                    <div className="no-print flex-1 flex flex-col">
+                        {/* NAVBAR */}
+                        <header className="gradient-dark text-white sticky top-0 z-40 border-b border-slate-800 shadow-2xl">
+                            <div className="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
+                                <div className="flex items-center space-x-3 cursor-pointer group" onClick={() => setView('shop')}>
+                                    <div className="gradient-gold p-2.5 rounded-2xl text-slate-950 font-black text-2xl shadow-lg shadow-amber-500/20 group-hover:scale-105 transition">🏗️</div>
+                                    <div>
+                                        <h1 className="text-2xl font-black tracking-wider text-amber-400 flex items-center gap-1">
+                                            STROY<span className="text-white">MARKET</span>
+                                            <span className="bg-amber-500/20 text-amber-400 text-[10px] px-2 py-0.5 rounded-full border border-amber-500/30">PRO</span>
+                                        </h1>
+                                        <p className="text-[11px] text-slate-400">Qurilish va ta'mirlash gipermarketi</p>
+                                    </div>
+                                </div>
+
+                                <div className="flex-1 max-w-md mx-2">
+                                    <div className="relative">
+                                        <input 
+                                            type="text" 
+                                            placeholder="G'isht, sement, kafel, bo'yoq izlash..." 
+                                            value={searchTerm}
+                                            onChange={e => setSearchTerm(e.target.value)}
+                                            className="w-full bg-slate-900/80 text-white placeholder-slate-500 text-xs px-4 py-2.5 rounded-xl border border-slate-700/80 focus:outline-none focus:border-amber-500 transition shadow-inner"
+                                        />
+                                        <span className="absolute right-3 top-2.5 text-xs text-slate-500">🔍</span>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center space-x-2">
+                                    <button onClick={() => setView('shop')} className={`px-4 py-2 rounded-xl text-xs font-bold transition ${view === 'shop' ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20' : 'hover:bg-slate-800 text-slate-300'}`}>Do'kon</button>
+                                    <button onClick={() => setView('contacts')} className={`px-4 py-2 rounded-xl text-xs font-bold transition ${view === 'contacts' ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20' : 'hover:bg-slate-800 text-slate-300'}`}>Manzil</button>
+                                    <button onClick={() => setView('cart')} className="relative px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 border border-slate-700">
+                                        <span>🛒 Savat</span>
+                                        {cart.length > 0 && <span className="bg-amber-500 text-slate-950 text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center animate-pulse">{cart.reduce((a, b) => a + b.qty, 0)}</span>}
+                                    </button>
+                                    <button onClick={() => setView('admin')} className={`px-3 py-2 border border-amber-500/40 rounded-xl text-xs font-bold text-amber-400 hover:bg-amber-500 hover:text-slate-950 transition ${view === 'admin' ? 'bg-amber-500 text-slate-950' : ''}`}>🔑 Admin</button>
+                                </div>
+                            </div>
+                        </header>
+
+                        {/* CONTENT AREA */}
+                        <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6">
+                            
+                            {/* DO'KON BO'LIMI */}
+                            {view === 'shop' && (
+                                <div className="space-y-8 animate-fade-in">
+                                    {/* HERO BANNER */}
+                                    <div className="gradient-dark rounded-3xl p-8 md:p-12 text-white shadow-2xl relative overflow-hidden border border-slate-800 flex flex-col md:flex-row justify-between items-center gap-8">
+                                        <div className="absolute -right-10 -top-10 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                                        <div className="space-y-4 max-w-2xl z-10">
+                                            <div className="inline-flex items-center space-x-2 bg-amber-500/10 border border-amber-500/30 px-3 py-1 rounded-full">
+                                                <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+                                                <span className="text-amber-400 text-xs font-bold uppercase tracking-wider">Eng Sifatli Materiallar Markazi</span>
+                                            </div>
+                                            <h2 className="text-3xl md:text-5xl font-black tracking-tight leading-tight">
+                                                Uyingizni orzuingizdagidek <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">quring va ta'mirlang!</span>
+                                            </h2>
+                                            <p className="text-slate-400 text-xs md:text-sm leading-relaxed">
+                                                G'ishtdan to yoritgichlargacha, sement va laminatgacha barcha mahsulotlar mavjud. Aniq o'lchamni kiriting va kalkulyator yordamida sarf-xarajatni hisoblang.
+                                            </p>
+                                        </div>
+
+                                        <div className="glass-card p-6 rounded-2xl border border-white/20 text-slate-900 shadow-2xl w-full md:w-80 space-y-3 z-10">
+                                            <div className="text-xs font-bold uppercase text-slate-500 tracking-wider">Tezkor Bog'lanish</div>
+                                            <div className="text-2xl font-black text-slate-900">+998 (90) 123-45-67</div>
+                                            <div className="text-xs text-emerald-600 font-bold flex items-center gap-1.5">
+                                                <span className="w-2 h-2 rounded-full bg-emerald-500"></span> Ochiq: 08:00 - 20:00
+                                            </div>
+                                            <div className="pt-2 border-t text-[11px] text-slate-500">📍 Toshkent sh, Sergeli q.</div>
+                                        </div>
+                                    </div>
+
+                                    {/* KATEGORIYALAR */}
+                                    <div className="space-y-3">
+                                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Kategoriyalar Bo'yicha Qidiruv</h3>
+                                        <div className="flex space-x-2 overflow-x-auto pb-2 scrollbar-none">
+                                            {CATEGORIES.map(cat => (
+                                                <button
+                                                    key={cat.name}
+                                                    onClick={() => setSelectedCategory(cat.name)}
+                                                    className={`px-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition flex items-center space-x-2 ${selectedCategory === cat.name ? 'bg-slate-900 text-amber-400 shadow-lg shadow-slate-900/20 scale-105' : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'}`}
+                                                >
+                                                    <span>{cat.icon}</span>
+                                                    <span>{cat.name}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* MAHSULOTLAR RO'YXATI */}
+                                    <div className="space-y-4">
+                                        <div className="flex justify-between items-center">
+                                            <h3 className="text-lg font-black text-slate-900 tracking-tight">
+                                                {selectedCategory} <span className="text-slate-400 text-xs font-normal">({filteredProducts.length} ta mahsulot)</span>
+                                            </h3>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                            {filteredProducts.map(p => (
+                                                <div key={p.id} className="bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-sm hover:shadow-2xl transition duration-300 flex flex-col justify-between group hover:-translate-y-1">
+                                                    <div>
+                                                        <div className="relative h-52 overflow-hidden bg-slate-100">
+                                                            <img src={p.image} alt={p.name} className="w-full h-full object-cover group-hover:scale-110 transition duration-700" />
+                                                            <span className="absolute top-3 left-3 bg-slate-900/90 backdrop-blur-md text-amber-400 text-[10px] font-bold px-3 py-1 rounded-full border border-amber-500/30">
+                                                                {p.category}
+                                                            </span>
+                                                            {p.isPopular && (
+                                                                <span className="absolute top-3 right-3 bg-amber-500 text-slate-950 text-[10px] font-black px-2.5 py-1 rounded-full shadow-md">
+                                                                    🔥 Top
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="p-5 space-y-2">
+                                                            <h4 className="font-bold text-slate-900 text-base line-clamp-1 group-hover:text-amber-600 transition">{p.name}</h4>
+                                                            <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">{p.description}</p>
+                                                            <div className="text-[11px] text-slate-400 pt-1">Ombor zaxirasi: <strong className="text-slate-700">{p.stock} {p.unit}</strong></div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="p-5 border-t border-slate-100 space-y-3 bg-slate-50/50">
+                                                        <div className="flex justify-between items-baseline">
+                                                            <span className="text-xs text-slate-400 font-medium">Narxi:</span>
+                                                            <span className="text-xl font-black text-amber-600">{p.price.toLocaleString()} <span className="text-xs font-normal text-slate-500">so'm / {p.unit}</span></span>
+                                                        </div>
+
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            <button onClick={() => setSelectedProduct(p)} className="bg-white border border-slate-200 hover:bg-slate-100 text-slate-800 text-xs font-bold py-2 rounded-xl transition">📄 Batafsil</button>
+                                                            <button onClick={() => { setCalcProduct(p); setCalcResult(null); }} className="bg-amber-100 hover:bg-amber-200 text-amber-900 text-xs font-bold py-2 rounded-xl transition">🧮 Hisoblash</button>
+                                                        </div>
+
+                                                        <button onClick={() => addToCart(p)} className="w-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold py-3 rounded-xl transition flex items-center justify-center space-x-2 shadow-lg shadow-slate-900/10">
+                                                            <span>Savatga qo'shish</span>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* SAVAT BO'LIMI */}
+                            {view === 'cart' && (
+                                <div className="animate-fade-in max-w-5xl mx-auto space-y-6">
+                                    <h2 className="text-2xl font-black text-slate-900">Xaridlar va Rasmiylashtirish</h2>
+
+                                    {cart.length === 0 ? (
+                                        <div className="bg-white p-12 text-center rounded-3xl border border-slate-200 space-y-4">
+                                            <p className="text-6xl">🛒</p>
+                                            <p className="text-slate-500 font-semibold text-sm">Savatda hali mahsulotlar yo'q.</p>
+                                            <button onClick={() => setView('shop')} className="bg-amber-500 text-slate-950 font-bold px-6 py-2.5 rounded-xl text-xs">Do'konga qaytish</button>
+                                        </div>
+                                    ) : (
+                                        <div className="grid lg:grid-cols-3 gap-6">
+                                            <div className="lg:col-span-2 space-y-3">
+                                                {cart.map(item => (
+                                                    <div key={item.id} className="bg-white p-4 rounded-2xl border border-slate-200 flex items-center justify-between gap-4 shadow-sm">
+                                                        <div className="flex items-center space-x-3">
+                                                            <img src={item.image} className="w-16 h-16 object-cover rounded-xl border" />
+                                                            <div>
+                                                                <h4 className="font-bold text-slate-900 text-xs">{item.name}</h4>
+                                                                <p className="text-[11px] text-slate-500">{item.price.toLocaleString()} so'm / {item.unit}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center space-x-3">
+                                                            <div className="flex items-center border rounded-xl overflow-hidden bg-slate-50">
+                                                                <button onClick={() => addToCart(item, -1)} disabled={item.qty <= 1} className="px-2.5 py-1 text-xs font-bold text-slate-600 hover:bg-slate-200">-</button>
+                                                                <span className="px-3 text-xs font-bold">{item.qty}</span>
+                                                                <button onClick={() => addToCart(item, 1)} className="px-2.5 py-1 text-xs font-bold text-slate-600 hover:bg-slate-200">+</button>
+                                                            </div>
+                                                            <p className="font-black text-amber-600 text-xs w-24 text-right">{(item.price * item.qty).toLocaleString()} so'm</p>
+                                                            <button onClick={() => removeFromCart(item.id)} className="text-red-500 text-xs font-bold hover:bg-red-50 p-1.5 rounded-lg">✕</button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            <form onSubmit={handleCheckout} className="bg-white p-6 rounded-3xl border border-slate-200 space-y-4 shadow-sm h-fit">
+                                                <h3 className="font-black text-base text-slate-900 border-b pb-3">🚚 Dostavka Ma'lumotlari</h3>
+                                                
+                                                <div>
+                                                    <label className="text-[11px] font-bold text-slate-600">Ismingiz</label>
+                                                    <input type="text" required placeholder="Masalan: Jamshid" value={orderInfo.name} onChange={e => setOrderInfo({...orderInfo, name: e.target.value})} className="w-full p-2.5 text-xs border rounded-xl mt-1 focus:outline-none focus:border-amber-500" />
+                                                </div>
+
+                                                <div>
+                                                    <label className="text-[11px] font-bold text-slate-600">Telefon raqamingiz</label>
+                                                    <input type="tel" required placeholder="+998 90 123 45 67" value={orderInfo.phone} onChange={e => setOrderInfo({...orderInfo, phone: e.target.value})} className="w-full p-2.5 text-xs border rounded-xl mt-1 focus:outline-none focus:border-amber-500" />
+                                                </div>
+
+                                                <div>
+                                                    <label className="text-[11px] font-bold text-slate-600">Manzil (Uy, ko'cha, mo'ljal)</label>
+                                                    <textarea required placeholder="Masalan: Chilonzor 10, 15-uy" value={orderInfo.address} onChange={e => setOrderInfo({...orderInfo, address: e.target.value})} className="w-full p-2.5 text-xs border rounded-xl mt-1 h-16 focus:outline-none focus:border-amber-500"></textarea>
+                                                </div>
+
+                                                <div className="border-t pt-3 space-y-1.5">
+                                                    <div className="flex justify-between text-xs text-slate-500"><span>Mahsulotlar:</span><span>{subtotal.toLocaleString()} so'm</span></div>
+                                                    <div className="flex justify-between text-xs text-slate-500"><span>Dostavka:</span><span>40,000 so'm</span></div>
+                                                    <div className="flex justify-between text-base font-black text-slate-900 pt-2 border-t"><span>Jami to'lov:</span><span className="text-amber-600">{(subtotal + 40000).toLocaleString()} so'm</span></div>
+                                                </div>
+
+                                                <button type="submit" className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-black py-3 rounded-xl text-xs transition shadow-lg shadow-amber-500/20">
+                                                    Buyurtmani Tasdiqlash
+                                                </button>
+                                            </form>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* ALOQA VA MANZIL BO'LIMI */}
+                            {view === 'contacts' && (
+                                <div className="animate-fade-in max-w-4xl mx-auto space-y-6">
+                                    <h2 className="text-2xl font-black text-slate-900">Aloqa va Bizning Manzil</h2>
+                                    <div className="grid md:grid-cols-2 gap-6">
+                                        <div className="bg-white p-6 rounded-3xl border border-slate-200 space-y-4 shadow-sm">
+                                            <h3 className="font-black text-base text-amber-600">📍 Bosh Gipermarketimiz</h3>
+                                            <div className="space-y-2 text-xs text-slate-600 leading-relaxed">
+                                                <p><strong>Manzil:</strong> Toshkent shahri, Sergeli tumani, Quruvchilar ko'chasi 45-uy.</p>
+                                                <p><strong>Mo'ljal:</strong> Qurilish bozori asosiy kirishi ro'parasida.</p>
+                                                <p><strong>Ish vaqtlari:</strong> Har kuni 08:00 dan 20:00 gacha (Dam olish kunlarisiz).</p>
+                                                <p><strong>Telefonlar:</strong> +998 (90) 123-45-67, +998 (71) 200-00-00</p>
+                                                <p><strong>Telegram:</strong> @stroysuper_admin</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-white p-6 rounded-3xl border border-slate-200 space-y-3 shadow-sm">
+                                            <h3 className="font-black text-base text-slate-900">✉️ Xabar Yuborish</h3>
+                                            <form onSubmit={(e) => { e.preventDefault(); alert("Xabaringiz qabul qilindi! Operatorlarimiz tez orada bog'lanishadi."); e.target.reset(); }} className="space-y-2.5">
+                                                <input type="text" required placeholder="Ismingiz" className="w-full p-2.5 text-xs border rounded-xl" />
+                                                <input type="tel" required placeholder="Telefon raqamingiz" className="w-full p-2.5 text-xs border rounded-xl" />
+                                                <textarea required placeholder="Savol yoki taklifingiz..." className="w-full p-2.5 text-xs border rounded-xl h-20"></textarea>
+                                                <button type="submit" className="w-full bg-slate-900 text-white font-bold py-2.5 text-xs rounded-xl">Yuborish</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* ADMIN PANEL BO'LIMI */}
+                            {view === 'admin' && (
+                                <div className="animate-fade-in space-y-8">
+                                    {!isAdminAuth ? (
+                                        <div className="max-w-sm mx-auto bg-white p-8 rounded-3xl shadow-2xl border border-slate-200 text-center space-y-4">
+                                            <div className="w-12 h-12 bg-amber-100 text-amber-800 rounded-full flex items-center justify-center mx-auto text-xl font-bold">🔒</div>
+                                            <h3 className="text-lg font-black">Admin Panelga Kirish</h3>
+                                            <p className="text-xs text-slate-500">Maxfiy kodingizni kiriting (Parol: 1234)</p>
+                                            <form onSubmit={handleAdminLogin} className="space-y-3">
+                                                <input type="password" maxLength="4" placeholder="****" value={adminPin} onChange={e => setAdminPin(e.target.value)} className="w-full text-center text-3xl font-black p-2 border-2 rounded-2xl focus:border-amber-500 tracking-widest" />
+                                                {pinError && <p className="text-xs text-red-500 font-bold">Parol noto'g'ri!</p>}
+                                                <button type="submit" className="w-full bg-slate-900 text-white font-bold py-3 rounded-xl text-xs">Kirish</button>
+                                            </form>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-8">
+                                            <div className="flex justify-between items-center">
+                                                <h2 className="text-2xl font-black text-slate-900">Boshqaruv va Tushum Nazorati</h2>
+                                                <button onClick={() => setIsAdminAuth(false)} className="text-xs font-bold text-red-500 bg-red-50 px-3 py-2 rounded-xl">Chiqish</button>
+                                            </div>
+
+                                            {/* TUSHUM STATISTIKASI VA PRINT */}
+                                            <div className="bg-white p-6 rounded-3xl border border-slate-200 space-y-4 shadow-sm">
+                                                <div className="flex flex-wrap justify-between items-center border-b pb-4 gap-4">
+                                                    <div>
+                                                        <h3 className="text-lg font-black">📊 Bugungi Tushum: <span className="text-emerald-600">{todayRevenue.toLocaleString()} so'm</span></h3>
+                                                        <p className="text-xs text-slate-500">Sana: {todayStr} | Jami buyurtmalar: {todaySales.length} ta</p>
+                                                    </div>
+                                                    <button onClick={() => { setPrintOrder(null); setTimeout(triggerPrint, 100); }} className="bg-slate-900 hover:bg-slate-800 text-amber-400 text-xs font-bold px-4 py-2.5 rounded-xl flex items-center space-x-2 transition">
+                                                        <span>🖨️ Kunlik Hisobotni Chop Etish</span>
+                                                    </button>
+                                                </div>
+
+                                                <div className="overflow-x-auto">
+                                                    <table className="w-full text-left text-xs">
+                                                        <thead>
+                                                            <tr className="border-b bg-slate-50 text-slate-500 uppercase">
+                                                                <th className="p-3">ID</th>
+                                                                <th className="p-3">Sana & Vaqt</th>
+                                                                <th className="p-3">Mijoz</th>
+                                                                <th className="p-3">Summa</th>
+                                                                <th className="p-3">Kassa Cheki</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y">
+                                                            {sales.map(s => (
+                                                                <tr key={s.id} className="hover:bg-slate-50">
+                                                                    <td className="p-3 font-bold text-amber-600">{s.id}</td>
+                                                                    <td className="p-3">{s.date} <br/> <span className="text-slate-400">{s.time}</span></td>
+                                                                    <td className="p-3 font-semibold">{s.customer} <br/> <span className="text-slate-400">{s.phone}</span></td>
+                                                                    <td className="p-3 font-black text-emerald-600">{s.total.toLocaleString()} so'm</td>
+                                                                    <td className="p-3">
+                                                                        <button onClick={() => { setPrintOrder(s); setTimeout(triggerPrint, 100); }} className="bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold px-3 py-1.5 rounded-lg border">🖨️ Chek Chop Etish</button>
+                                                                    </td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+
+                                            {/* MAHSULOTLAR BAZASI VA TAHRIRLASH */}
+                                            <div className="bg-white p-6 rounded-3xl border border-slate-200 space-y-4 shadow-sm">
+                                                <h3 className="text-lg font-black text-slate-900">📦 Ombor va Mahsulotlarni Tahrirlash</h3>
+                                                <div className="overflow-x-auto">
+                                                    <table className="w-full text-left text-xs border-collapse">
+                                                        <thead>
+                                                            <tr className="border-b bg-slate-50 text-slate-500 uppercase">
+                                                                <th className="p-3">Nomi</th>
+                                                                <th className="p-3">Kategoriya</th>
+                                                                <th className="p-3">Narx</th>
+                                                                <th className="p-3">Ombordagi Soni</th>
+                                                                <th className="p-3">Boshqaruv</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y">
+                                                            {products.map(p => (
+                                                                <tr key={p.id} className="hover:bg-slate-50">
+                                                                    <td className="p-3 font-bold">{p.name}</td>
+                                                                    <td className="p-3">{p.category}</td>
+                                                                    <td className="p-3 font-bold text-amber-600">{p.price.toLocaleString()} so'm</td>
+                                                                    <td className="p-3">{p.stock} {p.unit}</td>
+                                                                    <td className="p-3 space-x-2">
+                                                                        <button onClick={() => setEditingProduct(p)} className="text-blue-600 font-bold bg-blue-50 px-2.5 py-1 rounded-lg hover:bg-blue-100">✏️ Tahrirlash</button>
+                                                                        <button onClick={() => handleDeleteProduct(p.id)} className="text-red-500 font-bold bg-red-50 px-2.5 py-1 rounded-lg hover:bg-red-100">✕ O'chirish</button>
+                                                                    </td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+
+                                            {/* YANGI MAHSULOT QO'SHISH */}
+                                            <div className="bg-white p-6 rounded-3xl border border-slate-200 space-y-4 shadow-sm">
+                                                <h3 className="text-lg font-black text-slate-900">➕ Yangi Mahsulot Qo'shish</h3>
+                                                <form onSubmit={handleAddProduct} className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                                    <input name="name" placeholder="Mahsulot nomi" required className="p-2.5 text-xs border rounded-xl" />
+                                                    <select name="category" className="p-2.5 text-xs border rounded-xl">
+                                                        {CATEGORIES.filter(c => c.name !== "Barchasi").map(c => <option key={c.name}>{c.name}</option>)}
+                                                    </select>
+                                                    <input name="price" type="number" placeholder="Narxi (so'm)" required className="p-2.5 text-xs border rounded-xl" />
+                                                    <input name="unit" placeholder="Birligi (kv.m, dona, qop)" required className="p-2.5 text-xs border rounded-xl" />
+                                                    <input name="coverage" type="number" step="0.1" placeholder="1 birlik hajmi (kv.m)" className="p-2.5 text-xs border rounded-xl" />
+                                                    <input name="stock" type="number" placeholder="Ombordagi miqdori" required className="p-2.5 text-xs border rounded-xl" />
+                                                    <input name="image" placeholder="Rasm URL havolasi" className="p-2.5 text-xs border rounded-xl md:col-span-2" />
+                                                    <textarea name="description" placeholder="Batafsil ma'lumot..." className="p-2.5 text-xs border rounded-xl md:col-span-3 h-16"></textarea>
+                                                    <button type="submit" className="md:col-span-3 bg-amber-500 text-slate-950 font-bold py-3 rounded-xl text-xs hover:bg-amber-600 transition">
+                                                        Ombor Bazasiga Saqlash
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </main>
+                    </div>
+
+                    {/* MODAL: BATAFSIL MA'LUMOT */}
+                    {selectedProduct && (
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                            <div className="bg-white max-w-lg w-full rounded-3xl p-6 space-y-4 animate-fade-in relative shadow-2xl">
+                                <button onClick={() => setSelectedProduct(null)} className="absolute top-4 right-4 text-slate-400 font-bold hover:text-slate-600 text-lg">✕</button>
+                                <img src={selectedProduct.image} className="w-full h-56 object-cover rounded-2xl" />
+                                <span className="bg-amber-100 text-amber-900 text-xs font-bold px-3 py-1 rounded-full">{selectedProduct.category}</span>
+                                <h3 className="text-xl font-bold text-slate-900">{selectedProduct.name}</h3>
+                                <p className="text-slate-600 text-xs leading-relaxed">{selectedProduct.description}</p>
+                                <div className="border-t pt-4 flex justify-between items-center">
+                                    <span className="text-2xl font-black text-amber-600">{selectedProduct.price.toLocaleString()} so'm</span>
+                                    <button onClick={() => { addToCart(selectedProduct); setSelectedProduct(null); }} className="bg-slate-900 text-white font-bold text-xs px-6 py-3 rounded-xl">Savatga olish</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* MODAL: TAHRIRLASH */}
+                    {editingProduct && (
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                            <div className="bg-white max-w-md w-full rounded-3xl p-6 space-y-4 animate-fade-in relative shadow-2xl">
+                                <button onClick={() => setEditingProduct(null)} className="absolute top-4 right-4 text-slate-400 font-bold text-lg">✕</button>
+                                <h3 className="text-lg font-black text-slate-900">✏️ Mahsulotni Tahrirlash</h3>
+                                <form onSubmit={handleUpdateProduct} className="space-y-3">
+                                    <div>
+                                        <label className="text-[11px] font-bold text-slate-600">Nomi</label>
+                                        <input type="text" value={editingProduct.name} onChange={e => setEditingProduct({...editingProduct, name: e.target.value})} className="w-full p-2.5 text-xs border rounded-xl mt-1" required />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label className="text-[11px] font-bold text-slate-600">Narxi (so'm)</label>
+                                            <input type="number" value={editingProduct.price} onChange={e => setEditingProduct({...editingProduct, price: Number(e.target.value)})} className="w-full p-2.5 text-xs border rounded-xl mt-1" required />
+                                        </div>
+                                        <div>
+                                            <label className="text-[11px] font-bold text-slate-600">Omborda Soni</label>
+                                            <input type="number" value={editingProduct.stock} onChange={e => setEditingProduct({...editingProduct, stock: Number(e.target.value)})} className="w-full p-2.5 text-xs border rounded-xl mt-1" required />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="text-[11px] font-bold text-slate-600">Kategoriya</label>
+                                        <select value={editingProduct.category} onChange={e => setEditingProduct({...editingProduct, category: e.target.value})} className="w-full p-2.5 text-xs border rounded-xl mt-1">
+                                            {CATEGORIES.filter(c => c.name !== "Barchasi").map(c => <option key={c.name}>{c.name}</option>)}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="text-[11px] font-bold text-slate-600">Rasm URL</label>
+                                        <input type="text" value={editingProduct.image} onChange={e => setEditingProduct({...editingProduct, image: e.target.value})} className="w-full p-2.5 text-xs border rounded-xl mt-1" />
+                                    </div>
+                                    <div>
+                                        <label className="text-[11px] font-bold text-slate-600">Tavsif</label>
+                                        <textarea value={editingProduct.description} onChange={e => setEditingProduct({...editingProduct, description: e.target.value})} className="w-full p-2.5 text-xs border rounded-xl mt-1 h-16"></textarea>
+                                    </div>
+                                    <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl text-xs">O'zgarishlarni Saqlash</button>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* MODAL: KALKULYATOR */}
+                    {calcProduct && (
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                            <div className="bg-white max-w-md w-full rounded-3xl p-6 space-y-4 animate-fade-in relative shadow-2xl">
+                                <button onClick={() => setCalcProduct(null)} className="absolute top-4 right-4 text-slate-400 font-bold text-lg">✕</button>
+                                <h3 className="font-bold text-base text-slate-900">🧮 Hajmni Hisoblash - {calcProduct.name}</h3>
+                                <form onSubmit={handleCalculate} className="space-y-3">
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <input type="number" step="0.1" required placeholder="Uzunligi (m)" value={dimensions.length} onChange={e => setDimensions({...dimensions, length: e.target.value})} className="p-2.5 border text-xs rounded-xl" />
+                                        <input type="number" step="0.1" required placeholder="Eni (m)" value={dimensions.width} onChange={e => setDimensions({...dimensions, width: e.target.value})} className="p-2.5 border text-xs rounded-xl" />
+                                    </div>
+                                    <button type="submit" className="w-full bg-amber-500 text-slate-950 font-bold py-2.5 rounded-xl text-xs">Hisoblash</button>
+                                </form>
+                                {calcResult && (
+                                    <div className="bg-slate-50 p-4 rounded-2xl border space-y-2 text-xs">
+                                        <p>Kerakli miqdor: <strong className="text-amber-600">{calcResult.neededUnits} {calcProduct.unit}</strong></p>
+                                        <p>Jami Narx: <strong className="text-emerald-600">{calcResult.price.toLocaleString()} so'm</strong></p>
+                                        <button onClick={() => { addToCart(calcProduct, calcResult.neededUnits); setCalcProduct(null); }} className="w-full mt-2 bg-slate-900 text-white font-bold py-2.5 rounded-xl">Savatga qo'shish</button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>
